@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Miscellaneous
+.DS_Store
+.env
+
+# Build directory
+build/
+
+# Docker
+docker/
+
+# Python
+*.pyc
+__pycache__/
