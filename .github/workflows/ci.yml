@@ -1,0 +1,45 @@
+name: CI/CD
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - name: Install dependencies
+      run: npm install
+    - name: Build Docker image
+      run: docker build -t my-api-image .
+    - name: Run tests
+      run: npm test
+      env:
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+    - name: Push Docker image to Amazon ECR
+      run: |
+        $(aws ecr get-login --no-include-email --region us-west-2)
+        docker tag my-api-image:latest <account-id>.dkr.ecr.us-west-2.amazonaws.com/my-api-image:latest
+        docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/my-api-image:latest
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service --cluster my-cluster --service my-service --force-new-deployment
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+ 
